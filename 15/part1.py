@@ -7,13 +7,16 @@ from collections import defaultdict
 reading_directions = ((0, -1),(-1, 0),(1, 0),(0, 1))
 reverse = itemgetter(1, 0)
 
+class ElfException(Exception):
+    pass
+
 class Actor():
-    def __init__(self, actor_type, position):
+    def __init__(self, actor_type, position, ap=3):
         self.type = actor_type
         self.origin = position
         self.position = position
         self.hp = 200
-        self.ap = 3
+        self.ap = ap
         self.alive = True
         
     
@@ -62,16 +65,6 @@ class Actor():
         if enemies:
             targets = frozenset(target for actor in enemies for target in actor.adjacent() if target not in obstacles)
             if targets:
-                # Calculate all the shortest paths from the actor to the target positions. sorting them by distance and reading order
-                # distances = ((shortest_path(self.position, target, obstacles), target) for target in targets)
-                # valid_distances = list(distance for distance in distances if distance[0] is not None)
-                # if valid_distances:
-                #     target = sorted(valid_distances, key=lambda x: (x[0], reverse(x[1])))[0][1]
-                #     # Choose the step with the shortest path
-                #     distances = ((shortest_path(move, target, obstacles), move) for move in self.adjacent() if move not in obstacles)
-                #     valid_distances = (distance for distance in distances if distance[0] is not None)
-                #     move = sorted(valid_distances, key=lambda x: (x[0], reverse(x[1])))[0][1]
-                #     self.position = move
                 move = breath_first(self.position, targets, obstacles)
                 if move:
                     self.position = move
@@ -83,10 +76,16 @@ class Actor():
         return False
     
 class Dungeon():
-    def __init__(self, map_array):
+    def __init__(self, map_array, elf_power=3):
+        self.original_map = map_array
+        self.elf_power = elf_power
+        self.reset()
+        
+
+    def reset(self):
         self.dungeon = set()
         self.actors = list()
-        self._setup_map(map_array)        
+        self._setup_map(self.original_map)
 
     def _setup_map(self, map_array):
         for y, line in enumerate(map_array):
@@ -94,7 +93,7 @@ class Dungeon():
                 if c == '#':
                     self.dungeon.add((x, y))
                 if c == 'E':
-                    self.actors.append(Actor('E', (x, y)))
+                    self.actors.append(Actor('E', (x, y), self.elf_power))
                 if c == 'G':
                     self.actors.append(Actor('G', (x, y)))
 
@@ -124,6 +123,8 @@ class Dungeon():
                 break
         dead_actors = [actor for actor in self.actors if not actor.alive]
         for actor in dead_actors:
+            if actor.type == 'E':
+                raise ElfException()
             self.actors.remove(actor)
         return full_turn
 
@@ -170,48 +171,42 @@ def breath_first(a, targets, obstacles):
             return current
         current = come_from[current][0]
 
-def test_suite():
-    files = [('15/sample2', 27730),
-            ('15/sample3', 36334), 
-            ('15/sample4', 39514), 
-            ('15/sample5', 27755), 
-            ('15/sample6', 28944), 
-            ('15/sample7', 18740),
-            ('15/input', 191575)]
+class Game():
+    def __init__(self, dungeon):
+        self.dungeon = dungeon
+        self.dungeon.reset()
+        self.turns = 0
 
-    for testname, score in files:
-        with open(testname) as f:
-            dungeon = Dungeon(f.readlines())
-            turns = 0
-            while not dungeon.win():
-                full_turn = dungeon.update()
+    def run(self):
+        try:
+            while not self.dungeon.win():
+                full_turn = self.dungeon.update()
                 if full_turn:
-                    turns += 1
-            final_score = turns * sum(actor.hp for actor in dungeon.get_actors())
-            assert(score == final_score)
-            print(f'Test {testname} passed.')
+                    self.turns += 1
+            return self.turns * sum(actor.hp for actor in self.dungeon.get_actors())
+        except ElfException:
+            return None
 
 
 if __name__ == "__main__":
-    term = Terminal()
-    test_suite()    
-    # with open('15/input') as f:
-    #     dungeon = Dungeon(f.readlines())
-    # with term.cbreak():
-    #     dungeon.render(term)
-    #     term.inkey(timeout=0.05)
-    #     turns = 0
-    #     while not dungeon.win():
-    #         full_turn = dungeon.update()
-    #         if full_turn:
-    #             turns += 1
-    #         dungeon.render(term)
-    #         print(turns)
-    #         term.inkey(timeout=None)
-                
-    #     print(f'turns: {turns}')
-    #     score = turns * sum(actor.hp for actor in dungeon.get_actors())
-    #     print(f'Final score = {score}')
-        
+    with open('15/input') as f:
+        dungeon_map = f.readlines()
+    
+    fx = lambda x: Game(Dungeon(dungeon_map, x)).run()
+
+    max_ap = 30
+    min_ap = 3
+
+    while min_ap < max_ap:
+        ap = min_ap + (max_ap - min_ap) // 2
+        score = fx(ap)
+        if score is None:
+            min_ap = ap + 1
+        else:
+            last_score = (score, ap)
+            max_ap = ap
+    
+    print(last_score)
+    
         
     

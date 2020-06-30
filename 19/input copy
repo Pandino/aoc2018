@@ -1,0 +1,36 @@
+addi 1 16 1         ip = ip + 16 JMP 17:
+seti 1 5 5          e = 1
+seti 1 2 3        2:c = 1
+mulr 5 3 2        3:b = e * c
+eqrr 2 4 2          if b==d then b=1 else b = 0
+addr 2 1 1          ip = ip + b
+addi 1 1 1          ip = ip + 1 (b ==0) JMP 8
+addr 5 0 0          a = a + e (b==1)
+addi 3 1 3          c = c + 1
+gtrr 3 4 2          if c > d then b=1 else b = 0
+addr 1 2 1          ip = ip + b
+seti 2 6 1          ip = 2  JMP 3: (b == 0)
+addi 5 1 5          e = e + 1       (b == 1)
+gtrr 5 4 2          if e > d then b = 1 else b = 0
+addr 2 1 1          ip = ip + b
+seti 1 8 1          ip = 1 JMP 2: (b==0)
+mulr 1 1 1          ip = ip * ip (b==1 END?)
+addi 4 2 4       17:d = d+2
+mulr 4 4 4          d = d * d
+mulr 1 4 4          d = ip(19) * d
+muli 4 11 4         d = d * 11
+addi 2 5 2          b = b + 5
+mulr 2 1 2          b = b * ip(22)
+addi 2 12 2         b = b + 12
+addr 4 2 4          d = d + b
+addr 1 0 1          ip = ip + a 
+seti 0 4 1          (a==0) JMP 1:
+setr 1 4 2          (a==1) b = d
+mulr 2 1 2          b = b * ip
+addr 1 2 2          b = ip(29) + b
+mulr 1 2 2          b = ip(30) * b
+muli 2 14 2         b = 14 * b
+mulr 2 1 2          b = (34)ip * b
+addr 4 2 4          d = d + b
+seti 0 3 0          a = 0
+seti 0 7 1          JMP 1:
